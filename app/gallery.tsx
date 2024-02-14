@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Avatar from "boring-avatars";
 import {
   FaRegCircleXmark,
@@ -9,18 +9,23 @@ import {
   FaEnvelope,
 } from "react-icons/fa6";
 
-import Controls from "./controls";
+import Controls, { FieldOptionType, DirectionOptionType } from "./controls";
 import Modal from "./modal";
 
 import { User } from "./types/user";
+import sortUsersListBy from "@/lib/sortUsersListBy";
 
 export type GalleryProps = {
   users: User[];
 };
+
 const Gallery = ({ users }: GalleryProps) => {
   const [usersList, setUsersList] = useState(users);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [fieldOption, setFieldOption] = useState<FieldOptionType | null>(null);
+  const [directionOption, setDirectionOption] =
+    useState<DirectionOptionType | null>(null);
 
   const handleModalOpen = (id: number) => {
     const user = usersList.find((item) => item.id === id) || null;
@@ -36,19 +41,34 @@ const Gallery = ({ users }: GalleryProps) => {
     setIsModalOpen(false);
   };
 
+  const sortedUsersList = useMemo<User[]>(() => {
+    if (fieldOption && directionOption) {
+      return sortUsersListBy(usersList, {
+        key: fieldOption.value,
+        sortBy: directionOption.value,
+      });
+    }
+
+    return usersList;
+  }, [usersList, fieldOption, directionOption]);
+
   return (
     <div className="user-gallery">
       <div className="heading">
         <h1 className="title">Users</h1>
-        <Controls />
+        <Controls
+          onChangeField={(field) => setFieldOption(field)}
+          onChangeDirection={(direction) => setDirectionOption(direction)}
+          directionValue={directionOption}
+          fieldValue={fieldOption}
+        />
       </div>
       <div className="items">
-        {usersList.map((user, index) => (
+        {sortedUsersList.map((user, index) => (
           <div
             className="item user-card"
             key={index}
-            onClick={() => handleModalOpen(user.id)}
-          >
+            onClick={() => handleModalOpen(user.id)}>
             <div className="body">
               <Avatar
                 size={96}
@@ -70,8 +90,7 @@ const Gallery = ({ users }: GalleryProps) => {
                 role="button"
                 tabIndex={0}
                 className="close"
-                onClick={handleModalClose}
-              >
+                onClick={handleModalClose}>
                 <FaRegCircleXmark size={32} />
               </div>
             </div>
